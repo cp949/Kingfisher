@@ -33,7 +33,44 @@ public protocol Resource {
     var cacheKey: String { get }
     
     /// The target image URL.
-    var downloadURL: URL { get }
+    var location: String { get }
+    
+    var fileURL:URL? { get }
+    
+    var isNamedResource:Bool { get }
+}
+
+public extension Resource {
+    var fileURL:URL? {
+        if location.hasPrefix("file://") {
+            return URL(string:location)
+        }
+        
+        if location.hasPrefix("/") {
+            return URL(fileURLWithPath: location)
+        }
+        
+        return nil
+    }
+    
+    var httpURL:URL? {
+        if location.hasPrefix("http://") {
+            return URL(string:location)
+        }
+        return nil
+    }
+    
+    var isNamedResource:Bool {
+        return isFileResource == false && isHttpResource == false
+    }
+    
+    var isFileResource:Bool {
+        return location.hasPrefix("file://") || location.hasPrefix("/")
+    }
+    
+    var isHttpResource:Bool {
+        return location.hasPrefix("http://") || location.hasPrefix("https://")
+    }
 }
 
 /**
@@ -47,7 +84,7 @@ public struct ImageResource: Resource {
     public let cacheKey: String
     
     /// The target image URL.
-    public let downloadURL: URL
+    public let location: String
     
     /**
      Create a resource.
@@ -57,9 +94,9 @@ public struct ImageResource: Resource {
      
      - returns: A resource.
      */
-    public init(downloadURL: URL, cacheKey: String? = nil) {
-        self.downloadURL = downloadURL
-        self.cacheKey = cacheKey ?? downloadURL.absoluteString
+    public init(_ location: String, cacheKey: String? = nil) {
+        self.location = location
+        self.cacheKey = cacheKey ?? location
     }
 }
 
@@ -70,5 +107,5 @@ public struct ImageResource: Resource {
  */
 extension URL: Resource {
     public var cacheKey: String { return absoluteString }
-    public var downloadURL: URL { return self }
+    public var location: String { return self.absoluteString }
 }

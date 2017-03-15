@@ -67,12 +67,12 @@ extension Kingfisher where Base: UIButton {
             base.setImage(placeholder, for: state)
         }
         
-        setWebURL(resource.downloadURL, for: state)
+        setWebURL(resource.location, for: state)
         let task = KingfisherManager.shared.retrieveImage(
             with: resource,
             options: options,
             progressBlock: { receivedSize, totalSize in
-                guard resource.downloadURL == self.webURL(for: state) else {
+                guard resource.location == self.webURL(for: state) else {
                     return
                 }
                 if let progressBlock = progressBlock {
@@ -81,7 +81,7 @@ extension Kingfisher where Base: UIButton {
             },
             completionHandler: {[weak base] image, error, cacheType, imageURL in
                 DispatchQueue.main.safeAsync {
-                    guard let strongBase = base, imageURL == self.webURL(for: state) else {
+                    guard let strongBase = base, resource.location == self.webURL(for: state) else {
                         return
                     }
                     self.setImageTask(nil)
@@ -142,12 +142,12 @@ extension Kingfisher where Base: UIButton {
             base.setBackgroundImage(placeholder, for: state)
         }
         
-        setBackgroundWebURL(resource.downloadURL, for: state)
+        setBackgroundWebURL(resource.location, for: state)
         let task = KingfisherManager.shared.retrieveImage(
             with: resource,
             options: options,
             progressBlock: { receivedSize, totalSize in
-                guard resource.downloadURL == self.backgroundWebURL(for: state) else {
+                guard resource.location == self.backgroundWebURL(for: state) else {
                     return
                 }
                 if let progressBlock = progressBlock {
@@ -193,11 +193,11 @@ extension Kingfisher where Base: UIButton {
      
      - returns: Current URL for image.
      */
-    public func webURL(for state: UIControlState) -> URL? {
-        return webURLs[NSNumber(value:state.rawValue)] as? URL
+    public func webURL(for state: UIControlState) -> String? {
+        return webURLs[NSNumber(value:state.rawValue)] as? String
     }
     
-    fileprivate func setWebURL(_ url: URL?, for state: UIControlState) {
+    fileprivate func setWebURL(_ url: String?, for state: UIControlState) {
         webURLs[NSNumber(value:state.rawValue)] = url
     }
     
@@ -210,8 +210,8 @@ extension Kingfisher where Base: UIButton {
         return dictionary!
     }
     
-    fileprivate func setWebURLs(_ URLs: NSMutableDictionary) {
-        objc_setAssociatedObject(base, &lastURLKey, URLs, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    fileprivate func setWebURLs(_ locations: NSMutableDictionary) {
+        objc_setAssociatedObject(base, &lastURLKey, locations, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
     fileprivate var imageTask: RetrieveImageTask? {
@@ -236,12 +236,12 @@ extension Kingfisher where Base: UIButton {
      
      - returns: Current URL for background image.
      */
-    public func backgroundWebURL(for state: UIControlState) -> URL? {
-        return backgroundWebURLs[NSNumber(value:state.rawValue)] as? URL
+    public func backgroundWebURL(for state: UIControlState) -> String? {
+        return backgroundWebURLs[NSNumber(value:state.rawValue)] as? String
     }
     
-    fileprivate func setBackgroundWebURL(_ url: URL?, for state: UIControlState) {
-        backgroundWebURLs[NSNumber(value:state.rawValue)] = url
+    fileprivate func setBackgroundWebURL(_ location: String?, for state: UIControlState) {
+        backgroundWebURLs[NSNumber(value:state.rawValue)] = location
     }
     
     fileprivate var backgroundWebURLs: NSMutableDictionary {
@@ -253,8 +253,8 @@ extension Kingfisher where Base: UIButton {
         return dictionary!
     }
     
-    fileprivate func setBackgroundWebURLs(_ URLs: NSMutableDictionary) {
-        objc_setAssociatedObject(base, &lastBackgroundURLKey, URLs, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    fileprivate func setBackgroundWebURLs(_ locations: NSMutableDictionary) {
+        objc_setAssociatedObject(base, &lastBackgroundURLKey, locations, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
     fileprivate var backgroundImageTask: RetrieveImageTask? {
@@ -266,150 +266,3 @@ extension Kingfisher where Base: UIButton {
     }
 }
 
-// MARK: - Deprecated. Only for back compatibility.
-/**
-*	Set image to use from web for a specified state. Deprecated. Use `kf` namespacing instead.
-*/
-extension UIButton {
-    /**
-    Set an image to use for a specified state with a resource, a placeholder image, options, progress handler and 
-     completion handler.
-    
-    - parameter resource:          Resource object contains information such as `cacheKey` and `downloadURL`.
-    - parameter state:             The state that uses the specified image.
-    - parameter placeholder:       A placeholder image when retrieving the image at URL.
-    - parameter options:           A dictionary could control some behaviors. See `KingfisherOptionsInfo` for more.
-    - parameter progressBlock:     Called when the image downloading progress gets updated.
-    - parameter completionHandler: Called when the image retrieved and set.
-    
-    - returns: A task represents the retrieving process.
-     
-    - note: Both the `progressBlock` and `completionHandler` will be invoked in main thread.
-     The `CallbackDispatchQueue` specified in `optionsInfo` will not be used in callbacks of this method.
-    */
-    @discardableResult
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated. Use `button.kf.setImage` instead.",
-    renamed: "kf.setImage")
-    public func kf_setImage(with resource: Resource?,
-                                for state: UIControlState,
-                              placeholder: UIImage? = nil,
-                                  options: KingfisherOptionsInfo? = nil,
-                            progressBlock: DownloadProgressBlock? = nil,
-                        completionHandler: CompletionHandler? = nil) -> RetrieveImageTask
-    {
-        return kf.setImage(with: resource, for: state, placeholder: placeholder, options: options,
-                              progressBlock: progressBlock, completionHandler: completionHandler)
-    }
-    
-    /**
-     Cancel the image download task bounded to the image view if it is running.
-     Nothing will happen if the downloading has already finished.
-     */
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated. Use `button.kf.cancelImageDownloadTask` instead.",
-    renamed: "kf.cancelImageDownloadTask")
-    public func kf_cancelImageDownloadTask() { kf.cancelImageDownloadTask() }
-    
-    /**
-     Set the background image to use for a specified state with a resource,
-     a placeholder image, options progress handler and completion handler.
-     
-     - parameter resource:          Resource object contains information such as `cacheKey` and `downloadURL`.
-     - parameter state:             The state that uses the specified image.
-     - parameter placeholder:       A placeholder image when retrieving the image at URL.
-     - parameter options:           A dictionary could control some behaviors. See `KingfisherOptionsInfo` for more.
-     - parameter progressBlock:     Called when the image downloading progress gets updated.
-     - parameter completionHandler: Called when the image retrieved and set.
-     
-     - returns: A task represents the retrieving process.
-     
-     - note: Both the `progressBlock` and `completionHandler` will be invoked in main thread.
-     The `CallbackDispatchQueue` specified in `optionsInfo` will not be used in callbacks of this method.
-     */
-    @discardableResult
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated. Use `button.kf.setBackgroundImage` instead.",
-    renamed: "kf.setBackgroundImage")
-    public func kf_setBackgroundImage(with resource: Resource?,
-                                      for state: UIControlState,
-                                      placeholder: UIImage? = nil,
-                                      options: KingfisherOptionsInfo? = nil,
-                                      progressBlock: DownloadProgressBlock? = nil,
-                                      completionHandler: CompletionHandler? = nil) -> RetrieveImageTask
-    {
-        return kf.setBackgroundImage(with: resource, for: state, placeholder: placeholder, options: options,
-                                     progressBlock: progressBlock, completionHandler: completionHandler)
-    }
-    
-    /**
-     Cancel the background image download task bounded to the image view if it is running.
-     Nothing will happen if the downloading has already finished.
-     */
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated. Use `button.kf.cancelBackgroundImageDownloadTask` instead.",
-    renamed: "kf.cancelBackgroundImageDownloadTask")
-    public func kf_cancelBackgroundImageDownloadTask() { kf.cancelBackgroundImageDownloadTask() }
-    
-    /**
-     Get the image URL binded to this button for a specified state.
-     
-     - parameter state: The state that uses the specified image.
-     
-     - returns: Current URL for image.
-     */
-    @available(*, deprecated,
-        message: "Extensions directly on UIButton are deprecated. Use `button.kf.webURL` instead.",
-        renamed: "kf.webURL")
-    public func kf_webURL(for state: UIControlState) -> URL? { return kf.webURL(for: state) }
-    
-    @available(*, deprecated, message: "Extensions directly on UIButton are deprecated.",renamed: "kf.setWebURL")
-    fileprivate func kf_setWebURL(_ url: URL, for state: UIControlState) { kf.setWebURL(url, for: state) }
-    
-    @available(*, deprecated, message: "Extensions directly on UIButton are deprecated.",renamed: "kf.webURLs")
-    fileprivate var kf_webURLs: NSMutableDictionary { return kf.webURLs }
-    
-    @available(*, deprecated, message: "Extensions directly on UIButton are deprecated.",renamed: "kf.setWebURLs")
-    fileprivate func kf_setWebURLs(_ URLs: NSMutableDictionary) { kf.setWebURLs(URLs) }
-    
-    @available(*, deprecated, message: "Extensions directly on UIButton are deprecated.",renamed: "kf.imageTask")
-    fileprivate var kf_imageTask: RetrieveImageTask? { return kf.imageTask }
-    
-    @available(*, deprecated, message: "Extensions directly on UIButton are deprecated.",renamed: "kf.setImageTask")
-    fileprivate func kf_setImageTask(_ task: RetrieveImageTask?) { kf.setImageTask(task) }
-    
-    /**
-     Get the background image URL binded to this button for a specified state.
-     
-     - parameter state: The state that uses the specified background image.
-     
-     - returns: Current URL for background image.
-     */
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated. Use `button.kf.backgroundWebURL` instead.",
-    renamed: "kf.backgroundWebURL")
-    public func kf_backgroundWebURL(for state: UIControlState) -> URL? { return kf.backgroundWebURL(for: state) }
-    
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated.",renamed: "kf.setBackgroundWebURL")
-    fileprivate func kf_setBackgroundWebURL(_ url: URL, for state: UIControlState) {
-        kf.setBackgroundWebURL(url, for: state)
-    }
-    
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated.",renamed: "kf.backgroundWebURLs")
-    fileprivate var kf_backgroundWebURLs: NSMutableDictionary { return kf.backgroundWebURLs }
-    
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated.",renamed: "kf.setBackgroundWebURLs")
-    fileprivate func kf_setBackgroundWebURLs(_ URLs: NSMutableDictionary) { kf.setBackgroundWebURLs(URLs) }
-    
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated.",renamed: "kf.backgroundImageTask")
-    fileprivate var kf_backgroundImageTask: RetrieveImageTask? { return kf.backgroundImageTask }
-    
-    @available(*, deprecated,
-    message: "Extensions directly on UIButton are deprecated.",renamed: "kf.setBackgroundImageTask")
-    fileprivate func kf_setBackgroundImageTask(_ task: RetrieveImageTask?) { return kf.setBackgroundImageTask(task) }
-    
-}

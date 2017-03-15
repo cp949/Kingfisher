@@ -258,6 +258,7 @@ open class ImageCache {
         }
     }
 
+    
     // MARK: - Get data from cache
 
     /**
@@ -272,7 +273,7 @@ open class ImageCache {
     - returns: The retrieving task.
     */
     @discardableResult
-    open func retrieveImage(forKey key: String,
+    open func retrieveImage(forResource resource: Resource,
                                options: KingfisherOptionsInfo?,
                      completionHandler: ((Image?, CacheType) -> ())?) -> RetrieveImageDiskTask?
     {
@@ -281,6 +282,7 @@ open class ImageCache {
             return nil
         }
         
+        let key = resource.cacheKey
         var block: RetrieveImageDiskTask?
         let options = options ?? KingfisherEmptyOptionsInfo
         
@@ -292,7 +294,14 @@ open class ImageCache {
             var sSelf: ImageCache! = self
             block = DispatchWorkItem(block: {
                 // Begin to load image from disk
-                if let image = sSelf.retrieveImageInDiskCache(forKey: key, options: options) {
+                var toDisk = false
+                var img = sSelf.retrieveImageInDiskCache(forKey: key, options: options)
+                if img == nil && resource.isFileResource {
+                    img = sSelf.retrieveImageInDisk(forFileURL: resource.fileURL!)
+                    toDisk = true
+                }
+                
+                if let image = img {
                     if options.backgroundDecode {
                         sSelf.processQueue.async {
                             let result = image.kf.decoded(scale: options.scaleFactor)
@@ -301,7 +310,7 @@ open class ImageCache {
                                         forKey: key,
                                         processorIdentifier: options.processor.identifier,
                                         cacheSerializer: options.cacheSerializer,
-                                        toDisk: false,
+                                        toDisk: toDisk,
                                         completionHandler: nil)
                             
                             options.callbackDispatchQueue.safeAsync {
@@ -314,7 +323,7 @@ open class ImageCache {
                                     forKey: key,
                                     processorIdentifier: options.processor.identifier,
                                     cacheSerializer: options.cacheSerializer,
-                                    toDisk: false,
+                                    toDisk: toDisk,
                                     completionHandler: nil
                         )
                         options.callbackDispatchQueue.safeAsync {
@@ -368,6 +377,18 @@ open class ImageCache {
         let computedKey = key.computedKey(with: options.processor.identifier)
         
         return diskImage(forComputedKey: computedKey, serializer: options.cacheSerializer, options: options)
+    }
+    
+    
+
+    open func retrieveImageInDisk(forFileURL fileUrl: URL, options: KingfisherOptionsInfo? = nil) -> Image? {
+        
+        let options = options ?? KingfisherEmptyOptionsInfo
+        if let data = (try? Data(contentsOf: fileUrl)) {
+            return options.cacheSerializer.image(with: data, options: options)
+        }
+        
+        return nil
     }
 
 

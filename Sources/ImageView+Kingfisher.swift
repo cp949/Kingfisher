@@ -73,7 +73,7 @@ extension Kingfisher where Base: ImageView {
         let maybeIndicator = indicator
         maybeIndicator?.startAnimatingView()
         
-        setWebURL(resource.downloadURL)
+        setWebURL(resource.location)
 
         if base.shouldPreloadAllGIF() {
             options.append(.preloadAllGIFData)
@@ -83,22 +83,22 @@ extension Kingfisher where Base: ImageView {
             with: resource,
             options: options,
             progressBlock: { receivedSize, totalSize in
-                guard resource.downloadURL == self.webURL else {
+                guard resource.location == self.webURL else {
                     return
                 }
                 if let progressBlock = progressBlock {
                     progressBlock(receivedSize, totalSize)
                 }
             },
-            completionHandler: {[weak base] image, error, cacheType, imageURL in
+            completionHandler: {[weak base] image, error, cacheType, imageLocation in
                 DispatchQueue.main.safeAsync {
-                    guard let strongBase = base, imageURL == self.webURL else {
+                    guard let strongBase = base, imageLocation == self.webURL else {
                         return
                     }
                     self.setImageTask(nil)
                     guard let image = image else {
                         maybeIndicator?.stopAnimatingView()
-                        completionHandler?(nil, error, cacheType, imageURL)
+                        completionHandler?(nil, error, cacheType, imageLocation)
                         return
                     }
                     
@@ -107,7 +107,7 @@ extension Kingfisher where Base: ImageView {
                     {
                         maybeIndicator?.stopAnimatingView()
                         strongBase.image = image
-                        completionHandler?(image, error, cacheType, imageURL)
+                        completionHandler?(image, error, cacheType, imageLocation)
                         return
                     }
                     
@@ -123,7 +123,7 @@ extension Kingfisher where Base: ImageView {
                                                               },
                                                               completion: { finished in
                                                                 transition.completion?(finished)
-                                                                completionHandler?(image, error, cacheType, imageURL)
+                                                                completionHandler?(image, error, cacheType, imageLocation)
                                                               })
                                           })
                     #endif
@@ -152,12 +152,12 @@ private var imageTaskKey: Void?
 
 extension Kingfisher where Base: ImageView {
     /// Get the image URL binded to this image view.
-    public var webURL: URL? {
-        return objc_getAssociatedObject(base, &lastURLKey) as? URL
+    public var webURL: String? {
+        return objc_getAssociatedObject(base, &lastURLKey) as? String
     }
     
-    fileprivate func setWebURL(_ url: URL?) {
-        objc_setAssociatedObject(base, &lastURLKey, url, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    fileprivate func setWebURL(_ location: String?) {
+        objc_setAssociatedObject(base, &lastURLKey, location, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
     /// Holds which indicator type is going to be used.
@@ -221,71 +221,7 @@ extension Kingfisher where Base: ImageView {
 }
 
 
-// MARK: - Deprecated. Only for back compatibility.
-/**
-*	Set image to use from web. Deprecated. Use `kf` namespacing instead.
-*/
-extension ImageView {
-    /**
-    Set an image with a resource, a placeholder image, options, progress handler and completion handler.
-    
-    - parameter resource:          Resource object contains information such as `cacheKey` and `downloadURL`.
-    - parameter placeholder:       A placeholder image when retrieving the image at URL.
-    - parameter options:           A dictionary could control some behaviors. See `KingfisherOptionsInfo` for more.
-    - parameter progressBlock:     Called when the image downloading progress gets updated.
-    - parameter completionHandler: Called when the image retrieved and set.
-    
-    - returns: A task represents the retrieving process.
-     
-    - note: Both the `progressBlock` and `completionHandler` will be invoked in main thread. 
-     The `CallbackDispatchQueue` specified in `optionsInfo` will not be used in callbacks of this method.
-    */
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated. Use `imageView.kf.setImage` instead.", renamed: "kf.setImage")
-    @discardableResult
-    public func kf_setImage(with resource: Resource?,
-                              placeholder: Image? = nil,
-                                  options: KingfisherOptionsInfo? = nil,
-                            progressBlock: DownloadProgressBlock? = nil,
-                        completionHandler: CompletionHandler? = nil) -> RetrieveImageTask
-    {
-        return kf.setImage(with: resource, placeholder: placeholder, options: options, progressBlock: progressBlock, completionHandler: completionHandler)
-    }
-    
-    /**
-     Cancel the image download task bounded to the image view if it is running.
-     Nothing will happen if the downloading has already finished.
-     */
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated. Use `imageView.kf.cancelDownloadTask` instead.", renamed: "kf.cancelDownloadTask")
-    public func kf_cancelDownloadTask() { kf.cancelDownloadTask() }
-    
-    /// Get the image URL binded to this image view.
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated. Use `imageView.kf.webURL` instead.", renamed: "kf.webURL")
-    public var kf_webURL: URL? { return kf.webURL }
-    
-    /// Holds which indicator type is going to be used.
-    /// Default is .none, means no indicator will be shown.
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated. Use `imageView.kf.indicatorType` instead.", renamed: "kf.indicatorType")
-    public var kf_indicatorType: IndicatorType {
-        get { return kf.indicatorType }
-        set { kf.indicatorType = newValue }
-    }
-    
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated. Use `imageView.kf.indicator` instead.", renamed: "kf.indicator")
-    /// Holds any type that conforms to the protocol `Indicator`.
-    /// The protocol `Indicator` has a `view` property that will be shown when loading an image.
-    /// It will be `nil` if `kf_indicatorType` is `.none`.
-    public private(set) var kf_indicator: Indicator? {
-        get { return kf.indicator }
-        set { kf.indicator = newValue }
-    }
-    
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated.", renamed: "kf.imageTask")
-    fileprivate var kf_imageTask: RetrieveImageTask? { return kf.imageTask }
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated.", renamed: "kf.setImageTask")
-    fileprivate func kf_setImageTask(_ task: RetrieveImageTask?) { kf.setImageTask(task) }
-    @available(*, deprecated, message: "Extensions directly on image views are deprecated.", renamed: "kf.setWebURL")
-    fileprivate func kf_setWebURL(_ url: URL) { kf.setWebURL(url) }
-}
+
 
 extension ImageView {
     func shouldPreloadAllGIF() -> Bool { return true }

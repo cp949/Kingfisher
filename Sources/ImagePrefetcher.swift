@@ -58,7 +58,7 @@ public class ImagePrefetcher {
     private var progressBlock: PrefetcherProgressBlock?
     private var completionHandler: PrefetcherCompletionHandler?
     
-    private var tasks = [URL: RetrieveImageDownloadTask]()
+    private var tasks = [String: RetrieveImageDownloadTask]()
     
     private var pendingResources: ArraySlice<Resource>
     private var skippedResources = [Resource]()
@@ -194,7 +194,7 @@ public class ImagePrefetcher {
     func downloadAndCache(_ resource: Resource) {
 
         let downloadTaskCompletionHandler: CompletionHandler = { (image, error, _, _) -> () in
-            self.tasks.removeValue(forKey: resource.downloadURL)
+            self.tasks.removeValue(forKey: resource.location)
             if let _ = error {
                 self.failedResources.append(resource)
             } else {
@@ -213,15 +213,14 @@ public class ImagePrefetcher {
         }
         
         let downloadTask = manager.downloadAndCacheImage(
-            with: resource.downloadURL,
-            forKey: resource.cacheKey,
+            forResource: resource,
             retrieveImageTask: RetrieveImageTask(),
             progressBlock: nil,
             completionHandler: downloadTaskCompletionHandler,
             options: optionsInfo)
         
         if let downloadTask = downloadTask {
-            tasks[resource.downloadURL] = downloadTask
+            tasks[resource.location] = downloadTask
         }
     }
     
