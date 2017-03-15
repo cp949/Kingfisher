@@ -300,6 +300,10 @@ open class ImageCache {
                     img = sSelf.retrieveImageInDisk(forFileURL: resource.fileURL!)
                     toDisk = true
                 }
+                if img == nil && resource.isNamedResource {
+                    img = UIImage(named: resource.location)
+                    toDisk = false
+                }
                 
                 if let image = img {
                     if options.backgroundDecode {
