@@ -98,6 +98,11 @@ public struct ImageResource: Resource {
         self.location = location
         self.cacheKey = cacheKey ?? location
     }
+    
+    
+    public init(_ locationUrl: URL, cacheKey: String? = nil) {
+        self.init(locationUrl.absoluteString, cacheKey: cacheKey)
+    }
 }
 
 /**
