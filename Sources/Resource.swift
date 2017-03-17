@@ -54,7 +54,7 @@ public extension Resource {
     }
     
     var httpURL:URL? {
-        if location.hasPrefix("http://") {
+        if location.hasPrefix("http://") || location.hasPrefix("https://") {
             return URL(string:location)
         }
         return nil
